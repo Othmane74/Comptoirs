@@ -6,6 +6,7 @@ import comptoirs.dao.ProduitRepository;
 import comptoirs.entity.Ligne;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.Positive;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -45,6 +46,32 @@ public class LigneService {
      */
     @Transactional
     Ligne ajouterLigne(Integer commandeNum, Integer produitRef, @Positive int quantite) {
-        throw new UnsupportedOperationException("Cette méthode n'est pas implémentée");
+        // On vérifie que le produit existe
+        var produit = produitDao.findById(produitRef).orElseThrow();
+        // On vérifie que la commande existe
+        var commande = commandeDao.findById(commandeNum).orElseThrow();
+        // On récupère le nombre de produit restant en stock
+        var resteEnStock = produit.getUnitesEnStock();
+        // On crée une nouvelle ligne de commande
+        var ligne = new Ligne();
+        // On vérifie que la commande n'est pas encore envoyée
+        if( commande.getEnvoyeele() == null ) {
+            // On vérifie que la quantité à commander est positive
+            // On vérifie qu'il y a assez de produit en stock pour prendre en compte la commande
+            if( quantite > 0 && resteEnStock >= quantite ){
+                ligne.setCommande(commande);
+                ligne.setProduit(produit);
+                ligne.setQuantite(quantite);
+                // Enregistrer une nouvelle ligne dans la base de données
+                ligneDao.save(ligne); // Ajout d'une nouvelle ligne "save" pour insérer une nouvelle ligne
+                // Mettre à jour le nombre de produit commandé
+                produit.setUnitesCommandees(produit.getUnitesCommandees() + quantite);
+            } else {
+                throw new IllegalArgumentException("La quantité doit être positive ou inférieure aux nombre de produit en stock");
+            }
+        }else {
+            throw new DataIntegrityViolationException("On ne peut pas ajouter une ligne à une commande déjà envoyée");
+        }
+        return ligne;
     }
 }
