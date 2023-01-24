@@ -112,4 +112,5 @@ class LigneServiceTest {
         assertEquals(quantiteCommandee + quantite, produit.getUnitesCommandees(),
                 "Pour une nouvelle ligne de commande on incrémente le nombre de produits commandés de la quantité de produit commandé");
     }
+    //hhhhhhh
 }
